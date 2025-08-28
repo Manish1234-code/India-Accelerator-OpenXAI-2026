@@ -1,0 +1,51 @@
+# Step 1: Extract audio from video
+from moviepy.editor import VideoFileClip
+
+def extract_audio(video_path, audio_path="audio.wav"):
+    video = VideoFileClip(video_path)
+    video.audio.write_audiofile(audio_path)
+    return audio_path
+
+# Step 2: Transcribe audio using OpenAI Whisper
+import whisper
+
+def transcribe_audio(audio_path):
+    model = whisper.load_model("base")  # You can use "small", "medium", or "large" for better accuracy
+    result = model.transcribe(audio_path)
+    return result['text']
+
+# Step 3: Summarize and structure notes using HuggingFace Transformers
+from transformers import pipeline
+
+def summarize_text(text):
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+    chunks = [text[i:i+1000] for i in range(0, len(text), 1000)]  # Split long text
+    summaries = [summarizer(chunk)[0]['summary_text'] for chunk in chunks]
+    return "\n\n".join(summaries)
+
+# Step 4: Format notes
+def format_notes(summary):
+    lines = summary.split('. ')
+    formatted = "\n- " + "\n- ".join([line.strip() for line in lines if line])
+    return formatted
+
+# Main function
+def video_to_notes(video_path):
+    print("🔄 Extracting audio...")
+    audio_path = extract_audio(video_path)
+
+    print("📝 Transcribing audio...")
+    transcript = transcribe_audio(audio_path)
+
+    print("📚 Summarizing transcript...")
+    summary = summarize_text(transcript)
+
+    print("🗂️ Formatting notes...")
+    notes = format_notes(summary)
+
+    return notes
+
+# Example usage
+video_file = "your_video.mp4"
+notes = video_to_notes(video_file)
+print("\n🎯 Final Notes:\n", notes)
